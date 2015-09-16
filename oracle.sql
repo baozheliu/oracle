@@ -328,5 +328,21 @@ where jobs.max_salary > 10000;
    更新数据
 =====================*/
 
+--将工资少于2000的员工，调至平均工资水平
+UPDATE EMP
+SET SAL=(SELECT AVG(SAL)
+FROM EMP 
+WHERE JOB='MANAGER')
+WHERE SAL<2000;
 
 
+/*====================
+   删除数据
+=====================*/
+
+--使用DELETE 语句删除数据时，Oracle系统会产生回滚记录，所以可以通过ROLLBACK 语句撤销删除操作
+DELETE FROM  JOBS
+WHERE JOB_ID='PRO'
+
+--TRUNCATE语句比DELETE语句效率高，但不产生回滚记录
+TRUNCATE TABLE JOBS_TEMP
