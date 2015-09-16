@@ -280,6 +280,53 @@ WHERE LOWER(FIRST_NAME) LIKE '%a%';
 --3. 聚合类函数：AVG、COUNT、MAX、MIN、SUM
 	
 
+
+/*====================
+   子查询
+=====================*/
+--1. 单行子查询 ：子查询的返回结果为一行数据
+SELECT EMPNO,ENAME,SAL
+FROM EMP
+WHERE SAL>(SELECT MIN(SAL) FROM EMP)
+AND 
+SAL <(SELECT MAX(SAL) FROM EMP);
+
+--2. 多行子查询
+--查询非销售部门的员工信息
+SELECT EMPNO,ENAME,JOB
+FROM EMP
+WHERE DEPTNO IN
+(SELECT DEPTNO
+FROM DEPT
+WHERE DNAME<>'SALES');
+
   
+--关联子查询: 内查询的执行需要借助于外查询，而外查询的执行又离不开内查询，内查询和外查询是相互关联的
+ 
+
+
+-- 注：子查询中不能包括ORDER BY 字句。使用关联子查询时，会遍历数据表中每条记录，所以效率较低。
+
+--查询同职位中工资高于平均工资的员工
+select empno,ename,sal
+from emp f
+where sal > (select avg(sal) from emp where job = f.job)
+order by job;
+
+
+
+/*====================
+   插入数据
+=====================*/
+
+--批量插入数据，INSERT INTO 语句的列名必须与SELECT字句指定列名可以不同，但数据类型必须兼容。
+insert into jobs_temp
+select * from jobs
+where jobs.max_salary > 10000;
+
+/*====================
+   更新数据
+=====================*/
+
 
 
