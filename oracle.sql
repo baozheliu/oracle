@@ -20,6 +20,25 @@ SELECT product_id,
        "Location of inventory" FROM inventories
        WHERE product_id < 1775;
 	   
+/*
+   NVL函数的使用：
+   nul函数将一个null值转换为一个实际的值。数据类型可以是日期，数字，字符。
+   数据类型必须匹配：
+   nvl(commision,0)
+   nvl(hiredate,'01-JAN-87')
+   nvl(job_id,'no manager') nvl(to_char(job_id),'no manager')
+
+   http://docs.oracle.com/cd/B19306_01/server.102/b14200/functions105.htm
+*/
+  
+  SELECT last_name, NVL(TO_CHAR(commission_pct), 'Not Applicable')
+   "COMMISSION" FROM employees
+   WHERE last_name LIKE 'B%'
+   ORDER BY last_name;
+
+
+
+
 	   
 --查询NAME相同的记录
 select ID,NAME
@@ -346,3 +365,281 @@ WHERE JOB_ID='PRO'
 
 --TRUNCATE语句比DELETE语句效率高，但不产生回滚记录
 TRUNCATE TABLE JOBS_TEMP
+
+
+
+/*====================
+   事务处理
+=====================*/
+--事务的属性：原子性、一致性、隔离性、持久性
+
+truncate table jobs_temp;
+insert into jobs_temp values('OFFICE','办公文员',3000,5000);
+savepoint sp; --创建保存点
+insert into jobs_temp values('FINANCE','财务人员',4000,8000);
+select * from jobs_temp;
+rollback to savepoint sp;
+commit;
+select * from jobs_temp;
+
+/*====================
+   PL/SQL
+=====================*/
+
+
+--1. PL/SQL 程序以块为基本单位，PL/SQL分为三部分：
+   --1）声明部分（可选）：变量、常量、游标
+   --2）执行部分：BEGIN关键字开始，END关键字结束 
+   --3）异常处理部分（可选）:EXCEPTION关键字开始
+ --注意：每条语句必须以分号结束。
+ 
+set serveroutput on  --服务端显示执行结果
+declare
+  a int:=100;
+  b int:=200;
+  c number; --声明一个数值变量
+begin
+  c:=(a+b)/(a-b);
+  dbms_output.put_line(c);
+exception
+  when zero_divide then
+  dbms_output.put_line('除数不许为零!');
+end;
+
+
+ --2. PL/SQL 特殊数据类型
+ 
+  --1) %TYPE :声明一个与指定列名相同的数据类型
+
+set serveroutput on
+declare
+  var_ename emp.ename%type; 						--声明与ename列类型相同的变量
+  var_job emp.job%type; 							--声明与job列类型相同的变量
+begin
+  select ename,job
+  /*
+    into子句用于表示将从数据库中检索的数据存储到那个变量中;
+	into字句中的变量只能存储一个单独的值，所以要求select子句通过where子句进行限定
+  */
+  into var_ename,var_job   
+  from emp
+  where empno=7369;							--检索数据，并保存在变量中
+  dbms_output.put_line(var_ename||'的职务是'||var_job);	--输出变量的值
+end;
+
+  --2) RECORD类型（记录类型）
+  
+set serveroutput on
+declare
+  type emp_type is record --声明record类型emp_type
+  (
+    var_ename varchar2(20),--定义字段
+    var_job varchar2(20),
+    var_sal number
+  );
+  empinfo  emp_type; --定义变量
+begin
+  select ename,job,sal
+  into empinfo
+  from emp
+  where empno=7369;--检索数据
+  --输出雇员信息
+  dbms_output.put_line('雇员'||empinfo.var_ename||'的职务是'||empinfo.var_job||'、工资是'||empinfo.var_sal);
+end;
+
+ 
+
+ --3) ROWTYPE类型（记录类型）
+ 
+ 
+ set serveroutput on
+declare
+  rowVar_emp emp%rowtype; --定义能够存储emp表中一行数据的变量rowVar_emp
+begin
+  select * 
+  into rowVar_emp
+  from emp
+  where empno=7369;--检索数据
+  /*输出雇员信息*/
+  dbms_output.put_line('雇员'||rowVar_emp.ename||'的编号是'||rowVar_emp.empno||',职务是'||rowVar_emp.job);
+end;
+
+
+ --if ...then 语句
+ set serveroutput on
+declare
+  var_name1 varchar2(50);
+  var_name2 varchar2(50);
+begin
+  var_name1:='East';
+  var_name2:='xiaoke';
+  if length(var_name1) < length(var_name2) then
+    dbms_output.put_line('字符串“'||var_name1||'”的长度比字符串“'||var_name2||'”的长度小');
+  end if;
+end;
+
+
+  -- if ...then ...else
+  set serveroutput on
+declare
+  age int:=55;--定义整形变量并赋值
+begin
+  if age >= 56 then--比较年龄是否大于56岁
+    dbms_output.put_line('您可以申请退休了！');--输出退休信息
+  else
+    dbms_output.put_line('您小于56岁，不可以申请退休了！');--输出不可退休信息
+  end if;
+end;
+
+
+--if...then ...else if
+set serveroutput on
+declare
+  month int:=10;--定义整形变量并赋值
+begin
+  if month >= 0 and month <= 3  then--判断春季
+    dbms_output.put_line('这是春季');
+  elsif  month >= 4 and month <= 6 then--判断夏季
+    dbms_output.put_line('这是夏季');
+  elsif  month >= 7 and month <= 9  then--判断秋季
+    dbms_output.put_line('这是秋季');
+  elsif  month >= 10 and month <= 12 then--判断冬季
+    dbms_output.put_line('这是冬季');
+  else
+    dbms_output.put_line('对不起，月份不合法！');
+  end if;
+end;
+
+
+--case 语句
+set serveroutput on
+declare
+  season int:=3;--定义整形变量并赋值
+  aboutInfo varchar2(50); 
+begin
+  case season 
+    when 1 then
+      aboutInfo := season||'季度包括1，2，3月份';
+    when 2 then
+      aboutInfo := season||'季度包括4，5，6月份';
+    when 3 then
+      aboutInfo := season||'季度包括7，8，9月份';
+    when 4 then
+      aboutInfo := season||'季度包括10，11，12月份';
+    else
+      aboutInfo := season||'季节不合法';
+  end case;
+  dbms_output.put_line(aboutinfo);
+end;
+
+
+-- loop 
+set serveroutput on
+declare
+  sum_i int:= 0;--定义整数变量，存储整数和
+  i int:= 0;--定义整数变量，存储自然数
+begin
+  loop--循环累加自然数
+    i:=i+1;--得出自然数
+    sum_i:= sum_i+i;--计算前n个自然数的和
+    exit when i = 100;--当循环100次时，程序退出循环体
+  end loop;
+  dbms_output.put_line('前100个自然数的和是：'||sum_i);--计算前100个自然数的和
+end;
+
+
+
+-- while语句
+set serveroutput on
+declare
+  sum_i int:= 0;--定义整数变量，存储整数和
+  i int:= 0;--定义整数变量，存储自然数
+begin
+  while i<=99 loop
+    i:=i+1;--得出自然数
+    sum_i:= sum_i+i;--计算前n个自然数的和
+  end loop;
+  dbms_output.put_line('前100个自然数的和是：'||sum_i);--计算前100个自然数的和
+end;
+
+
+-- for 语句
+set serveroutput on
+declare
+  sum_i int:= 0;--定义整数变量，存储整数和
+begin
+  for i in reverse 1..100 loop --遍历前100个自然数
+    if mod(i,2)=0 then --判断是否为偶数
+      sum_i:=sum_i+i;--计算偶数和
+    end if;
+  end loop;
+  dbms_output.put_line('前100个自然数中偶数之和是：'||sum_i);
+end;
+
+
+
+/*===================================================*/
+
+/*存储过程 
+http://docs.oracle.com/cd/B19306_01/server.102/b14200/statements_6009.htm
+*/
+
+
+
+CREATE OR REPLACE PROCEDURE pro_insertDept is
+begin 
+	insert into dept values(99,'市场拓展部','北京');
+	dbms_output.put_line('插入新纪录成功！');
+end pro_insertDept
+
+--执行存储过程
+exec pro_insertDept;
+
+--在PL/SQL 执行pro_insertDep
+begin	
+	pro_insertDept
+end 
+
+
+
+
+
+--给存储过程传入参数：
+
+ --创建存储过程
+ create or replace procedure insert_dept(
+  num_deptno in number,					--定义in模式的变量，参数类型不能指定长度
+  var_ename in varchar2,				
+  var_loc in varchar2) is
+begin
+  insert into dept
+  values(num_deptno,var_ename,var_loc);		--向dept表中插入记录
+  commit;								--提交数据库
+end insert_dept;
+
+
+--传入参数调用存储过程：
+begin
+	insert_dept(var_ename=>'采购部',var_loc=>'成都',num_deptno=>'15')   --参数定义的顺序和调用时传入的顺序不一定一致
+end;
+--等同于
+begin
+	insert_dept(28,'工程部','洛阳')   --参数传值顺序必须与定义存储过程参数顺序一直
+end 
+--等同于
+exec insert_dept(28,var_loc=>'济南',var_name=>'测试部')
+
+
+
+
+
+--创建存储过程
+CREATE PROCEDURE remove_emp (employee_id NUMBER) AS
+   tot_emps NUMBER;
+   BEGIN
+      DELETE FROM employees
+      WHERE employees.employee_id = remove_emp.employee_id;
+   tot_emps := tot_emps - 1;
+ END;
+
+
